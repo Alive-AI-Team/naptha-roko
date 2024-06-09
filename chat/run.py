@@ -1,11 +1,18 @@
-import requests
+# import requests
 from chat.schemas import InputSchema
 from chat.utils import get_logger
-
+from chat.chroma.chroma_interface import ChromaInterface
+import asyncio
+from ollama import AsyncClient
 
 logger = get_logger(__name__)
 
-OLLAMA_ENDPOINT = "http://localhost:11434/api/generate"
+CHROMADB_COLLECTION_NAME = "roko-telegram"
+OLLAMA_ENDPOINT = "http://localhost:5050/api/generate"
+
+
+async def ollama_chat(model, messages):
+    return await AsyncClient(host=OLLAMA_ENDPOINT).chat(model=model, messages=messages)
 
 
 def run(job: InputSchema, cfg: dict = None, **kwargs):
@@ -18,15 +25,22 @@ def run(job: InputSchema, cfg: dict = None, **kwargs):
         "stream": False,
     }
 
-    response = requests.post(OLLAMA_ENDPOINT, json=data)
+    # Get content from vector db
+    ci = ChromaInterface()
+    results = ci.query(CHROMADB_COLLECTION_NAME, job.prompt, 10)
+    # insert it into the prompt
+    messages = []
+    for doc in results["documents"][0]:
+        messages.append({"role": "system", "content": doc})
+    messages.append({"role": "user", "content": job.prompt})
 
-    return response
+    return asyncio.run(ollama_chat(job.model, messages))
 
 
 if __name__ == "__main__":
     job = InputSchema(
         model="llama3",
-        prompt="tell me a joke",
+        prompt="Where do I find information about the Uphold exchange?",
     )
     result = run(job)
-    print(result.json())
+    print(result)

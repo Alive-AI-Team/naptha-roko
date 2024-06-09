@@ -7,6 +7,7 @@ class Model(str, Enum):
     GEMMA = "gemma"
     QWEN = "qwen"
     PHI = "phi"
+    LLAMA3 = "llama3"
 
 
 class InputSchema(BaseModel):
