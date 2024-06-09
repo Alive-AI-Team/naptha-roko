@@ -16,7 +16,7 @@ class ChromaDataGenerator:
 
 class TelegramJsonGenerator(ChromaDataGenerator):
 
-    def __init__(self, json_path: str | Path, min_message_len=100):
+    def __init__(self, json_path: str | Path, min_message_len=80):
         self.min_message_len = min_message_len
         with open(json_path, "r") as fp:
             data = json.load(fp)
@@ -43,6 +43,7 @@ class ChromaInterface:
     def create_collection(self, name: str, data_src: ChromaDataGenerator):
 
         collection = self.client.create_collection(name=name)
+        #TODO: improve speed by adding chunks at a time:
         for message in tqdm(data_src.get_messages()):
             collection.add(
                 documents=[message["text"]], metadatas=[message["meta"]], ids=[message["id"]]
